@@ -1,0 +1,569 @@
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Task Module</title>
+    <style>
+      html,
+      body {
+        padding: 0px;
+        margin: 0px;
+        width: 100%;
+        height: 100%;
+      }
+
+      button {
+        color: white;
+        padding: 10px;
+        margin: 10px;
+        border: 0px;
+        border-radius: 4px;
+      }
+
+      input {
+        flex: 1;
+        margin: 0 10px;
+      }
+
+      h1 {
+        color: darkblue;
+      }
+
+      .horizontal {
+        display: flex;
+        flex-direction: row;
+        flex: 1;
+      }
+    </style>
+  </head>
+
+  <body>
+    <script src="https://res.cdn.office.net/teams-js/2.22.0/js/MicrosoftTeams.min.js"></script>
+    <script type="text/javascript">
+      ///////////////// Constants /////////////////
+      const BotUrl = "https://chefbotcecsample.azurewebsites.net";
+      const AppId = "6a005479-d2f2-4385-9fce-5bbcf9442492";
+      const BotId = "9ff54553-b88b-449c-a39f-85d0d255b54b";
+      const DefaultTaskTitle = "Task Module";
+      const DefaultTaskHeight = "large";
+      const DefaultTaskWidth = "large";
+      const TaskModuleUrl = `${BotUrl}/assets/taskModule.html`;
+      const TaskModuleFallbackUrl = `${BotUrl}/assets/taskModule.html?fallback=true`;
+      const TaskModuleCard = {
+        type: "AdaptiveCard",
+        $schema: "http://adaptivecards.io/schemas/adaptive-card.json",
+        version: "1.5",
+        body: [
+          {
+            type: "TextBlock",
+            text: "Card 1",
+          },
+          {
+            id: "inputText",
+            type: "Input.Text",
+            placeholder: "Enter text",
+          },
+          {
+            id: "inputNumber",
+            type: "Input.Number",
+            placeholder: "Enter number",
+          },
+          {
+            id: "inputChoice",
+            type: "Input.ChoiceSet",
+            choices: [
+              {
+                title: "Choice 1",
+                value: "Choice 1",
+              },
+              {
+                title: "Choice 2",
+                value: "Choice 2",
+              },
+              {
+                title: "Choice 3",
+                value: "Choice 3",
+              },
+            ],
+            placeholder: "Enter choice",
+          },
+        ],
+        actions: [
+          {
+            type: "Action.Submit",
+            title: "Next Task Card",
+            data: {
+              type: "nextTaskCard",
+              value: 1,
+            },
+          },
+          {
+            type: "Action.Submit",
+            title: "Next Task Url",
+            data: {
+              type: "nextTaskUrl",
+            },
+          },
+          {
+            type: "Action.Submit",
+            title: "Submit",
+            data: {
+              key1: "value1",
+              key2: "value2",
+            },
+          },
+          /*{
+                    "type": "Action.Execute",
+                    "title": "Execute",
+                    "verb": "ActionExecuteVerb",
+                    "data": {
+                        "key3": "value3",
+                        "key4": "value4"
+                    }
+                },
+                {
+                    "type": "Action.OpenUrl",
+                    "title": "OpenUrl",
+                    "url": `${TaskModuleFallbackUrl}`
+                }*/
+        ],
+      };
+
+      ///////////////// Utilities /////////////////
+
+      function isFallback() {
+        if (!window.fallback) {
+          window.fallback = new URL(window.location).searchParams.get(
+            "fallback"
+          );
+        }
+        return !!window.fallback;
+      }
+
+      function log(message) {
+        console.log(`${message}, fallback: ${isFallback()}`);
+      }
+
+      function parseString(str) {
+        try {
+          return JSON.parse(str);
+        } catch (e) {
+          log(`parseString: error: ${JSON.stringify(e)}`);
+          return str;
+        }
+      }
+
+      ///////////////// Initialize /////////////////
+
+      if (!isFallback()) {
+        console.log("Initialize!");
+        microsoftTeams.app.initialize();
+        console.log(
+          "Value for isInitialized() : " + microsoftTeams.app.isInitialized()
+        );
+        microsoftTeams.app.notifySuccess();
+        microsoftTeams.app.getContext().then((context) => {
+          console.log(`GetContext: ${JSON.stringify(context)}`);
+          if (context.dialogParameters) {
+            console.dialogParameters["inputText#"];
+            console.log(
+              `Pre-populate: ${JSON.stringify(context.dialogParameters)}`
+            );
+          }
+        });
+      }
+
+      ///////////////// Submit Task /////////////////
+
+      function getSubmitPayload(logTag, stringify, payloadValue) {
+        if (!payloadValue) {
+          payloadValue = document.getElementById("taskPayload").value;
+        }
+        const payload = stringify ? payloadValue : parseString(payloadValue);
+        log(
+          `${logTag}: stringify:${stringify}, payload:${payload}, payloadStr:${JSON.stringify(
+            payload
+          )}`
+        );
+        return payload;
+      }
+
+      function getSubmitAppIds(logTag) {
+        const appIds = parseString(document.getElementById("taskAppIds").value);
+        log(`${logTag}: appIdsStr:${JSON.stringify(appIds)}`);
+        return appIds || undefined;
+      }
+
+      function submitTask(stringify, payloadValue) {
+        const payload = getSubmitPayload("submitTask", stringify, payloadValue);
+        const appIds = getSubmitAppIds("submitTask");
+        if (isFallback()) {
+          return;
+        }
+        if (payload === "empty") {
+          microsoftTeams.tasks.submitTask();
+        } else {
+          microsoftTeams.tasks.submitTask(payload, appIds);
+        }
+      }
+
+      function dialogSubmit(stringify, payloadValue) {
+        const payload = getSubmitPayload(
+          "dialogSubmit",
+          stringify,
+          payloadValue
+        );
+        const appIds = getSubmitAppIds("dialogSubmit");
+        if (isFallback()) {
+          return;
+        }
+        if (payload === "empty") {
+          microsoftTeams.dialog.url.submit();
+        } else {
+          microsoftTeams.dialog.url.submit(payload, appIds);
+        }
+      }
+
+      ///////////////// Start Task /////////////////
+
+      function getTaskInfo(logTag, isUrl) {
+        var taskInfo = {
+          title: document.getElementById("taskTitle").value || DefaultTaskTitle,
+          height:
+            document.getElementById("taskHeight").value || DefaultTaskHeight,
+          width: document.getElementById("taskWidth").value || DefaultTaskWidth,
+          completionBotId:
+            document.getElementById("taskBotId").value || undefined,
+        };
+        if (isUrl) {
+          taskInfo.url = TaskModuleUrl;
+          taskInfo.fallbackUrl = TaskModuleFallbackUrl;
+        } else {
+          taskInfo.card =
+            document.getElementById("taskAC").value ||
+            JSON.stringify(TaskModuleCard);
+        }
+        log(`${logTag}: taskInfoStr:${JSON.stringify(taskInfo)}`);
+        return taskInfo;
+      }
+
+      function startTask(isUrl) {
+        const taskInfo = getTaskInfo("startTask", isUrl);
+        if (isFallback()) {
+          return;
+        }
+        microsoftTeams.tasks.startTask(taskInfo, function (error, result) {
+          log(
+            `startTask.submitHandler: error:${error}, result:${JSON.stringify(
+              result
+            )}`
+          );
+        });
+      }
+
+      function dialogOpen(isUrl) {
+        const taskInfo = getTaskInfo("dialogOpen", isUrl);
+        if (isFallback()) {
+          return;
+        }
+        const dialogInfo = {
+          url: taskInfo.url,
+          fallbackUrl: taskInfo.fallbackUrl,
+          card: taskInfo.card,
+          title: taskInfo.title,
+          size: {
+            height: taskInfo.height,
+            width: taskInfo.width,
+          },
+          completionBotId: taskInfo.completionBotId,
+        };
+        if (!!dialogInfo.card) {
+          if (!!dialogInfo.completionBotId) {
+            microsoftTeams.dialog.adaptiveCard.bot.open(
+              dialogInfo,
+              function (response) {
+                log(
+                  `dialog.adaptiveCard.bot.open.submitHandler: response:${JSON.stringify(
+                    response
+                  )}`
+                );
+              }
+            );
+          } else {
+            microsoftTeams.dialog.adaptiveCard.open(
+              dialogInfo,
+              function (response) {
+                log(
+                  `dialog.adaptiveCard.open.submitHandler: response:${JSON.stringify(
+                    response
+                  )}`
+                );
+              }
+            );
+          }
+        } else {
+          if (!!dialogInfo.completionBotId) {
+            microsoftTeams.dialog.url.bot.open(dialogInfo, function (response) {
+              log(
+                `dialog.url.bot.open.submitHandler: response:${JSON.stringify(
+                  response
+                )}`
+              );
+            });
+          } else {
+            microsoftTeams.dialog.url.open(dialogInfo, function (response) {
+              log(
+                `dialog.url.open.submitHandler: response:${JSON.stringify(
+                  response
+                )}`
+              );
+            });
+          }
+        }
+      }
+
+      ///////////////// Execute Deeplink /////////////////
+
+      function getDeepLink(logTag, isUrl) {
+        var title = encodeURIComponent(
+          document.getElementById("taskTitle").value || DefaultTaskTitle
+        );
+        var height =
+          document.getElementById("taskHeight").value || DefaultTaskHeight;
+        var width =
+          document.getElementById("taskWidth").value || DefaultTaskWidth;
+        var taskDeepLink = `https://teams.microsoft.com/l/task/${AppId}?title=${title}&height=${height}&width=${width}`;
+        if (isUrl) {
+          taskDeepLink += `&url=${encodeURIComponent(TaskModuleUrl)}`;
+          taskDeepLink += `&fallbackUrl=${encodeURIComponent(
+            TaskModuleFallbackUrl
+          )}`;
+        } else {
+          taskDeepLink += `&card=${encodeURIComponent(
+            JSON.stringify(TaskModuleCard)
+          )}`;
+        }
+        var completionBotId = document.getElementById("taskBotId").value;
+        if (!!completionBotId) {
+          taskDeepLink += `&completionBotId=${completionBotId}`;
+        }
+        log(`${logTag}: taskDeepLink:${taskDeepLink}`);
+        return taskDeepLink;
+      }
+
+      function executeDeepLink(isUrl) {
+        const taskDeepLink = getDeepLink("executeDeepLink", isUrl);
+        if (isFallback()) {
+          return;
+        }
+        microsoftTeams.executeDeepLink(taskDeepLink, function (status, result) {
+          log(`executeDeepLink.onComplete: status:${status}, result:${result}`);
+        });
+      }
+
+      function openLink(isUrl) {
+        const taskDeepLink = getDeepLink("openLink", isUrl);
+        if (isFallback()) {
+          return;
+        }
+        microsoftTeams.app.openLink(taskDeepLink);
+      }
+
+      function nominalAuth() {
+        if (isFallback()) {
+          return;
+        }
+        microsoftTeams.authentication
+          .authenticate({
+            url: "https://sumit-relay.servicebus.windows.net/office/authPage.html",
+          })
+          .then((result) => {
+            console.log(`Authenticate completed with result: ${result}`);
+          })
+          .catch((reason) => {
+            console.log(`Authenticate failed with reason: ${reason}`);
+          });
+      }
+    </script>
+
+    <div
+      style="
+        display: flex;
+        flex-direction: column;
+        padding: 20px;
+        overflow: none;
+      "
+    >
+      <h1>Task Completion</h1>
+      <div class="horizontal">
+        Payload:
+        <input type="text" id="taskPayload" value='{"a":123,"b":true}' />
+      </div>
+      <div class="horizontal">
+        AppIds: <input type="text" id="taskAppIds" />
+      </div>
+
+      <h3>Submit Task:</h3>
+      <button style="background-color: darkgreen" onclick="submitTask(true)">
+        SubmitTaskString
+      </button>
+      <button style="background-color: darkgreen" onclick="submitTask(false)">
+        SubmitTaskObject
+      </button>
+      <button
+        style="background-color: darkgreen"
+        onclick="submitTask(true, 'empty')"
+      >
+        SubmitTaskEmpty
+      </button>
+      <button
+        style="background-color: darkgreen"
+        onclick="submitTask(true, 'message')"
+      >
+        SubmitTaskMessage
+      </button>
+      <button
+        style="background-color: darkgreen"
+        onclick="submitTask(true, 'continue')"
+      >
+        SubmitTaskContinue
+      </button>
+      <button
+        style="background-color: darkgreen"
+        onclick="submitTask(true, 'result')"
+      >
+        SubmitTaskResult
+      </button>
+      <button
+        style="background-color: darkgreen"
+        onclick="submitTask(true, 'botMessagePreview')"
+      >
+        SubmitTaskBotMessagePreview
+      </button>
+      <button
+        style="background-color: darkgreen"
+        onclick="submitTask(true, 'botSentCard')"
+      >
+        SubmitTaskBotSentCard
+      </button>
+      <button
+        style="background-color: darkgreen"
+        onclick="submitTask(true, 'nothing')"
+      >
+        SubmitTaskNothing
+      </button>
+
+      <h3>Dialog Submit:</h3>
+      <button style="background-color: darkgreen" onclick="dialogSubmit(true)">
+        DialogSubmitString
+      </button>
+      <button style="background-color: darkgreen" onclick="dialogSubmit(false)">
+        DialogSubmitObject
+      </button>
+      <button
+        style="background-color: darkgreen"
+        onclick="dialogSubmit(true, 'empty')"
+      >
+        DialogSubmitEmpty
+      </button>
+      <button
+        style="background-color: darkgreen"
+        onclick="dialogSubmit(true, 'message')"
+      >
+        DialogSubmitMessage
+      </button>
+      <button
+        style="background-color: darkgreen"
+        onclick="dialogSubmit(true, 'continue')"
+      >
+        DialogSubmitContinue
+      </button>
+      <button
+        style="background-color: darkgreen"
+        onclick="dialogSubmit(true, 'result')"
+      >
+        DialogSubmitResult
+      </button>
+      <button
+        style="background-color: darkgreen"
+        onclick="dialogSubmit(true, 'botMessagePreview')"
+      >
+        DialogSubmitBotMessagePreview
+      </button>
+      <button
+        style="background-color: darkgreen"
+        onclick="dialogSubmit(true, 'botSentCard')"
+      >
+        DialogSubmitBotSentCard
+      </button>
+      <button
+        style="background-color: darkgreen"
+        onclick="dialogSubmit(true, 'nothing')"
+      >
+        DialogSubmitNothing
+      </button>
+
+      <h1>Task Launch</h1>
+      <div class="horizontal">
+        AdaptiveCard: <input type="text" id="taskAC" value="" />
+      </div>
+      <div class="horizontal">
+        Title: <input type="text" id="taskTitle" value="Task Module" />
+      </div>
+      <div class="horizontal">
+        Height: <input type="text" id="taskHeight" value="large" />
+      </div>
+      <div class="horizontal">
+        Width: <input type="text" id="taskWidth" value="large" />
+      </div>
+      <div class="horizontal">
+        BotId:
+        <input
+          type="text"
+          id="taskBotId"
+          value="073ae440-2d3c-44be-a4d2-b7ebe60a2c31"
+        />
+      </div>
+
+      <h3>Start Task:</h3>
+      <button style="background-color: darkred" onclick="startTask(true)">
+        StartTaskUrl
+      </button>
+      <button style="background-color: darkred" onclick="startTask(false)">
+        StartTaskCard
+      </button>
+
+      <h3>Dialog Open:</h3>
+      <button style="background-color: darkred" onclick="dialogOpen(true)">
+        DialogOpenUrl
+      </button>
+      <button style="background-color: darkred" onclick="dialogOpen(false)">
+        DialogOpenCard
+      </button>
+
+      <h3>Execute Deep-link:</h3>
+      <button style="background-color: darkred" onclick="executeDeepLink(true)">
+        ExecuteDeepLinkTaskUrl
+      </button>
+      <button
+        style="background-color: darkred"
+        onclick="executeDeepLink(false)"
+      >
+        ExecuteDeepLinkTaskCard
+      </button>
+
+      <h3>Open Link:</h3>
+      <button style="background-color: darkred" onclick="openLink(true)">
+        OpenLinkTaskUrl
+      </button>
+      <button style="background-color: darkred" onclick="openLink(false)">
+        OpenLinkTaskCard
+      </button>
+
+      <h3>Misc:</h3>
+      <button style="background-color: darkgray" onclick="nominalAuth()">
+        NominalAuth
+      </button>
+    </div>
+  </body>
+</html>

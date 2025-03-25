@@ -1,0 +1,61 @@
+{
+  "$schema": "https://raw.githubusercontent.com/OfficeDev/microsoft-teams-app-schema/preview/DevPreview/MicrosoftTeams.schema.json",
+  "manifestVersion": "devPreview",
+  "version": "1.0.0",
+  "id": "8b5303d4-4a51-4255-bba4-5c3cdc0bc131",
+  "developer": {
+    "name": "Teams App, Inc.",
+    "websiteUrl": "https://www.example.com",
+    "privacyUrl": "https://www.example.com/privacy",
+    "termsOfUseUrl": "https://www.example.com/termofuse"
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "name": {
+    "short": "CEAAzureOpenAI-Dyanesh",
+    "full": "full name for CEAAzureOpenAI"
+  },
+  "description": {
+    "short": "short description for CEAAzureOpenAI",
+    "full": "full description for CEAAzureOpenAI"
+  },
+  "accentColor": "#FFFFFF",
+  "copilotAgents": {
+    "customEngineAgents": [
+      {
+        "type": "bot",
+        "id": "8b5303d4-4a51-4255-bba4-5c3cdc0bc130"
+      }
+    ]
+  },
+  "bots": [
+    {
+      "botId": "8b5303d4-4a51-4255-bba4-5c3cdc0bc130",
+      "scopes": ["personal", "groupChat"],
+      "supportsFiles": false,
+      "isNotificationOnly": false,
+      "commandLists": [
+        {
+          "scopes": ["personal", "groupChat"],
+          "commands": [
+            {
+              "title": "Create task:remind drink tonight",
+              "description": "Create a task for me to remind me drink water tonight"
+            },
+            {
+              "title": "Delete all my current tasks",
+              "description": "Delete all my current tasks"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "composeExtensions": [],
+  "configurableTabs": [],
+  "staticTabs": [],
+  "permissions": ["identity"],
+  "validDomains": []
+}
