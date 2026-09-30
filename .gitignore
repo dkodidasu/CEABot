@@ -24,3 +24,10 @@ devTools/
 .localConfigs.testTool
 .notification.localstore.json
 .notification.testtoolstore.json
+
+# Local certificate material
+bot-certificate.cer
+*.pfx
+*.p12
+*.pem
+*.key
