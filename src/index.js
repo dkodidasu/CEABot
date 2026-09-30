@@ -7,13 +7,26 @@ const adapter = require("./adapter");
 // This bot's main dialog.
 const app = require("./app/app");
 
-const { ActivityTypes } = require("botbuilder");
-
 const path = require("path");
+const handleInvokes = require("./handlers/invokeHandler");
+const handleMessages = require("./handlers/messageHandler");
+const handleConversationUpdates = require("./handlers/conversationUpdateHandler");
+const handleInstallationUpdates = require("./handlers/installationUpdateHandler");
+
+const { MemoryStorage, ConversationState, UserState } = require("botbuilder");
+
+const { OAuthDialog } = require("./authDialogs/oAuthDialog");
+const { SSOAuthDialog } = require("./authDialogs/ssoAuthDialog");
 
 // Create express application.
 const expressApp = express();
 expressApp.use(express.json());
+
+const storage = new MemoryStorage();
+const conversationState = new ConversationState(storage);
+const userState = new UserState(storage);
+const oauthDialog = new OAuthDialog(conversationState, userState);
+const ssoDialog = new SSOAuthDialog(conversationState, userState);
 
 const server = expressApp.listen(
   process.env.port || process.env.PORT || 3978,
@@ -29,74 +42,24 @@ const server = expressApp.listen(
 expressApp.post("/api/messages", async (req, res) => {
   // Route received a request to adapter for processing
   await adapter.process(req, res, async (context) => {
-    // Dispatch to application for routing
+    // Dispatch to Teams AI application - this handles auth automatically
     // await app.run(context);
-    // if (req.activity.type == "message") {
-    //   console.log("Message received: ", req.activity);
-    //   // if (context.activity.value?.commandId)
-    // }
 
     const activity = req.body;
     console.log("Req type: ", activity.type);
     console.log("Req text: ", activity.text);
-    console.log("Req body: ", activity);
+    console.log("Req name: ", activity.name);
 
-    if (activity.type === "message") {
-      if (activity.text === "feedback") {
-        await context.sendActivity({
-          type: ActivityTypes.Message,
-          text: `Hey! I'm a friendly AI bot and this message should have feedback buttons!`,
-          channelData: {
-            feedbackLoop: {
-              // Enable feedback buttons
-              type: "default",
-            },
-          },
-        });
-      } else if (activity.text === "feedbackCustom") {
-        await context.sendActivity({
-          type: ActivityTypes.Message,
-          text: `Hey! I'm a friendly AI bot and this message should have feedback buttons!`,
-          channelData: {
-            feedbackLoop: {
-              // Enable feedback buttons
-              type: "custom",
-            },
-          },
-        });
-      }
+    // Handle invoke activities separately if needed (for task modules, etc.)
+    if (activity.type == "message") {
+      await handleMessages(activity, context, oauthDialog, ssoDialog);
     } else if (activity.type === "invoke") {
-      if (
-        activity.name == "message/fetchTask" &&
-        activity.value.data.actionName == "feedback"
-      ) {
-        const task = {
-          type: "continue",
-          value: {
-            title: "Task module (task/fetch)",
-            url: "../assets/taskModule.html",
-            fallbackUrl:
-              "http://localhost:3978" + "/assets/taskModule.html?fallback=true",
-            width: 400,
-            height: 600,
-          },
-        };
-
-        await context.sendActivity({
-          type: "invokeResponse",
-          value: {
-            status: 200,
-            body: {
-              task,
-            },
-          },
-        });
-      }
+      await handleInvokes(activity, context, oauthDialog, ssoDialog);
+    } else if (activity.type === "conversationUpdate") {
+      await handleConversationUpdates(activity, context);
+    } else if (activity.type === "installationUpdate") {
+      await handleInstallationUpdates(activity, context);
     }
-
-    await context.sendActivity(
-      "Hello! This is a basic response from your Teams bot."
-    );
   });
 });
 

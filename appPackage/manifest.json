@@ -2,9 +2,9 @@
   "$schema": "https://raw.githubusercontent.com/OfficeDev/microsoft-teams-app-schema/preview/DevPreview/MicrosoftTeams.schema.json",
   "manifestVersion": "devPreview",
   "version": "1.0.0",
-  "id": "8b5303d4-4a51-4255-bba4-5c3cdc0bc131",
+  "id": "bf2f7075-0d9f-476b-9a4d-0c27cbe2f9aa",
   "developer": {
-    "name": "Teams App, Inc.",
+    "name": "Dyanesh Kodidasu",
     "websiteUrl": "https://www.example.com",
     "privacyUrl": "https://www.example.com/privacy",
     "termsOfUseUrl": "https://www.example.com/termofuse"
@@ -14,48 +14,76 @@
     "outline": "outline.png"
   },
   "name": {
-    "short": "CEAAzureOpenAI-Dyanesh",
-    "full": "full name for CEAAzureOpenAI"
+    "short": "CEAUpdated-Dyanesh",
+    "full": "full name for CEAUpdated-Dyanesh"
   },
   "description": {
-    "short": "short description for CEAAzureOpenAI",
-    "full": "full description for CEAAzureOpenAI"
+    "short": "short description for CEAUpdated-Dyanesh",
+    "full": "full description for CEAUpdated-Dyanesh"
   },
   "accentColor": "#FFFFFF",
   "copilotAgents": {
     "customEngineAgents": [
       {
         "type": "bot",
-        "id": "8b5303d4-4a51-4255-bba4-5c3cdc0bc130"
+        "id": "71b071d8-8d5a-4791-82b3-dd88c320fc3f"
       }
     ]
   },
   "bots": [
     {
-      "botId": "8b5303d4-4a51-4255-bba4-5c3cdc0bc130",
-      "scopes": ["personal", "groupChat"],
-      "supportsFiles": false,
+      "botId": "71b071d8-8d5a-4791-82b3-dd88c320fc3f",
+      "scopes": ["personal", "groupChat", "team"],
+      "supportsFiles": true,
       "isNotificationOnly": false,
       "commandLists": [
         {
-          "scopes": ["personal", "groupChat"],
+          "scopes": ["personal", "groupChat", "team"],
           "commands": [
             {
-              "title": "Create task:remind drink tonight",
-              "description": "Create a task for me to remind me drink water tonight"
-            },
-            {
-              "title": "Delete all my current tasks",
-              "description": "Delete all my current tasks"
+              "title": "actionsAdaptiveCard",
+              "description": "Actions on adaptive card"
             }
           ]
         }
       ]
     }
   ],
-  "composeExtensions": [],
+  "composeExtensions": [
+    {
+      "botId": "71b071d8-8d5a-4791-82b3-dd88c320fc3f",
+      "canUpdateConfiguration": false,
+      "commands": [
+        {
+          "id": "tasksSearchQuery",
+          "type": "query",
+          "title": "Tasks",
+          "description": "Search tasks",
+          "initialRun": true,
+          "fetchTask": false,
+          "context": ["commandBox", "compose"],
+          "parameters": [
+            {
+              "name": "searchQuery",
+              "title": "Search Query",
+              "description": "Search tasks in CEA",
+              "inputType": "text"
+            }
+          ]
+        }
+      ]
+    }
+  ],
   "configurableTabs": [],
   "staticTabs": [],
-  "permissions": ["identity"],
-  "validDomains": []
+  "validDomains": [
+    "token.botframework.com",
+    "*.ngrok-free.app",
+    "localhost",
+    "web-kmovedev.devl.moveworks.io"
+  ],
+  "webApplicationInfo": {
+        "id": "71b071d8-8d5a-4791-82b3-dd88c320fc3f",
+        "resource": "api://botid-71b071d8-8d5a-4791-82b3-dd88c320fc3f"
+    }
 }

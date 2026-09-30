@@ -8,9 +8,17 @@ const {
 
 const config = require("./config");
 
+// For local development, allow unsigned requests
+const credentialsFactory = new ConfigurationServiceClientCredentialFactory({
+  MicrosoftAppId: config.MicrosoftAppId,
+  MicrosoftAppPassword: config.MicrosoftAppPassword,
+  MicrosoftAppType: config.MicrosoftAppType,
+  MicrosoftAppTenantId: config.MicrosoftAppTenantId,
+});
+
 const botFrameworkAuthentication = new ConfigurationBotFrameworkAuthentication(
   {},
-  new ConfigurationServiceClientCredentialFactory(config)
+  credentialsFactory
 );
 
 // Create adapter.
@@ -23,9 +31,10 @@ const onTurnErrorHandler = async (context, error) => {
   // NOTE: In production environment, you should consider logging this to Azure
   //       application insights.
   console.error(`\n [onTurnError] unhandled error: ${error}`);
+  console.error("Error stack:", error.stack);
 
   // Only send error message for user messages, not for other message types so the bot doesn't spam a channel or chat.
-  if (context.activity.type === "message") {
+  if (context?.activity?.type === "message") {
     // Send a trace activity, which will be displayed in Bot Framework Emulator
     await context.sendTraceActivity(
       "OnTurnError Trace",
@@ -36,7 +45,9 @@ const onTurnErrorHandler = async (context, error) => {
 
     // Send a message to the user
     await context.sendActivity("The bot encountered an error or bug.");
-    await context.sendActivity("To continue to run this bot, please fix the bot source code.");
+    await context.sendActivity(
+      "To continue to run this bot, please fix the bot source code."
+    );
   }
 };
 
